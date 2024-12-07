@@ -10,6 +10,10 @@ class ArticleService {
     return Article.findByIdAndUpdate(id, data, { new: true })
   }
 
+  getOne(id) {
+    return Article.findById(id).populate({}).exec()
+  }
+
   delete(id) {
     return Article.deleteOne({ _id: id })
   }

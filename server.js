@@ -29,17 +29,17 @@ app.use((req, res, next) => {
 app.use(cors())
 app.use(express.json())
 
+app.post('/login', usersController.login)
 app.use('/api/users', authMiddleware, userRouter)
 app.use('/api/articles', authMiddleware, articlesRouter)
-app.post('/login', usersController.login)
 
 app.use('/', express.static('public'))
 
-app.use((req, res, next) => {
+app.use((_req, _res, next) => {
   next(new NotFoundError())
 })
 
-app.use((error, req, res, next) => {
+app.use((error, _req, res, _next) => {
   const status = error.status || 500
   const message = error.message
   res.status(status)
