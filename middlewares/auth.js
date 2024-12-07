@@ -10,6 +10,7 @@ module.exports = async (req, __res, next) => {
     if (!token) {
       throw new Error('No token provided')
     }
+
     const decoded = jwt.verify(token, config.secretJwtToken)
     const user = await userservice.get(decoded.userId)
 
@@ -19,7 +20,7 @@ module.exports = async (req, __res, next) => {
 
     req.user = user
     next()
-  } catch (message) {
-    next(new UnauthorizedError(message))
+  } catch (err) {
+    next(new UnauthorizedError(err.message || 'Unauthorized'))
   }
 }
