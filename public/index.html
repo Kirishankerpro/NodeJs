@@ -43,11 +43,11 @@
     <article v-else>
       <div style="margin: 50px 0px; display: flex; justify-content: space-between; align-items: center">
         <div style="display: flex; flex-direction: column">
-          <p>User connected :</p>
+          <p>Utilisateur connecté :</p>
           <div>
-            <p>Name : {{ user.name }}</p>
-            <p>Email : {{ user.email }}</p>
-            <p>Role : {{ user.role }}</p>
+            <p>Nom : {{ user.name }}</p>
+            <p>E-mail : {{ user.email }}</p>
+            <p>Rôle : {{ user.role }}</p>
           </div>
         </div>
         <button class="contrast" style="background-color: red; color: white" @click="deconnect">Déconnexion</button>
@@ -55,12 +55,12 @@
       <div v-if="user.role == 'admin'">
         <h1>Créer un utilisateur</h1>
         <form @submit.prevent="create">
-          <input type="text" placeholder="Name" required v-model="newUser.name" />
-          <input type="text" placeholder="Email" required v-model="newUser.email" />
-          <input type="text" placeholder="Password" required v-model="newUser.password" />
+          <input type="text" placeholder="Nom de l'utilisateur" required v-model="newUser.name" />
+          <input type="text" placeholder="Email de l'utilisateur" required v-model="newUser.email" />
+          <input type="text" placeholder="Mot de passe de l'utilisateur" required v-model="newUser.password" />
           <button class="contrast" style="background-color: lightblue">Créer</button>
         </form>
-        <h1>Utilisateur existant</h1>
+        <h1>Utilisateurs existant</h1>
         <table>
           <thead>
             <tr>
@@ -84,14 +84,15 @@
       <div style="margin-top: 100px">
         <h1>Ajouter un article</h1>
         <form @submit.prevent="createArticle" style="display: flex; flex-direction: column">
-          <input type="text" placeholder="Title" required v-model="newArticle.title" />
-          <input type="text" placeholder="Content" required v-model="newArticle.content" />
+          <input type="text" placeholder="Titre de votre article" required v-model="newArticle.title" />
+          <input type="text" placeholder="Contenu de votre article" required v-model="newArticle.content" />
           <div style="margin-bottom: 20px; display: flex; align-items: center">
             <input type="checkbox" v-model="newArticle.published" />
-            <label for="published" style="margin-left: 2px"> Publier </label>
+            <label for="published" style="margin-left: 2px"> Publier (cocher pour publier l'article) </label>
           </div>
           <button class="contrast" style="background-color: lightblue">Ajouter un article</button>
         </form>
+
         <h1>Vos articles</h1>
         <table>
           <thead>
@@ -116,6 +117,39 @@
             </tr>
           </tbody>
         </table>
+
+        <div v-if="user.role == 'admin'">
+          <h1>Tous les articles</h1>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">User</th>
+                <th scope="col">Title</th>
+                <th scope="col">content</th>
+                <th scope="col">Status</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="articles.length == 0" style="height: 100px">
+                <td colspan="5">Aucun article</td>
+              </tr>
+              <tr v-for="article in allArticles">
+                <td>{{ article._id }}</td>
+                <td>
+                  <p>ID : {{ article.user._id}}</p>
+                  <p>Nom : {{ article.user.name }}</p>
+                  <p>Email : {{ article.user.email}}</p>
+                </td>
+                <td>{{ article.title }}</td>
+                <td>{{ article.content }}</td>
+                <td>{{ article.status }}</td>
+                <td><button @click="removeArticle(article._id)" style="background-color: red">Supprimer</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </article>
   </main>
@@ -138,6 +172,7 @@
         newUser: {},
         newArticle: {},
         articles: [],
+        allArticles: [],
         userToken: '',
       }
     },
@@ -160,19 +195,31 @@
         this.userToken = localStorage.getItem('token')
         if (this.userToken) {
           this.layout = 'list'
-          const users = await axios
-            .get('/api/users', {
-              headers: {
-                'x-access-token': this.userToken,
-              },
-            })
-            .then(res => res.data)
-
           const user = await axios.get('/api/users/getUser/' + this.userToken, {
             headers: {
               'x-access-token': this.userToken,
             },
           })
+
+          const users = []
+          if (user.data.role == 'admin') {
+            const usersData = await axios.get('/api/users', {
+              headers: {
+                'x-access-token': this.userToken,
+              },
+            })
+            users.push(...usersData.data)
+          }
+
+          const allArticles = []
+          if (user.data.role == 'admin') {
+            const articles = await axios.get('/api/articles', {
+              headers: {
+                'x-access-token': this.userToken,
+              },
+            })
+            allArticles.push(...articles.data)
+          }
 
           const userArticles = await axios.get(`/api/users/${user.data._id}/articles`, {
             headers: {
@@ -183,6 +230,7 @@
           this.articles = userArticles.data
           this.user = user.data
           this.users = users
+          this.allArticles = allArticles
         }
 
         socket.on('user:create', data => {
@@ -199,6 +247,7 @@
 
         socket.on('article:delete', data => {
           this.articles = this.articles.filter(article => article._id != data.id)
+          this.allArticles = this.allArticles.filter(article => article._id != data.id)
         })
       },
       async remove(userId) {
@@ -224,7 +273,6 @@
           title: this.newArticle.title,
           content: this.newArticle.content,
           status: this.newArticle.published ? 'published' : 'draft',
-          user: this.user._id,
         }
 
         await axios
