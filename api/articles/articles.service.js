@@ -11,11 +11,21 @@ class ArticleService {
   }
 
   getOne(id) {
-    return Article.findById(id).populate({}).exec()
+    return Article.findById(id).populate({
+      path: 'user',
+      select: '-password',
+    })
   }
 
   delete(id) {
     return Article.deleteOne({ _id: id })
+  }
+
+  getAll() {
+    return Article.find().populate({
+      path: 'user',
+      select: '-password',
+    })
   }
 
   getArticlesByUser(userId) {
