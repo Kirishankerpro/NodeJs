@@ -4,7 +4,7 @@ const { Server } = require('socket.io')
 const cors = require('cors')
 const NotFoundError = require('./errors/not-found')
 const userRouter = require('./api/users/users.router')
-const articlesRouter = require('./api/articles/artcles.router')
+const articlesRouter = require('./api/articles/articles.router')
 const usersController = require('./api/users/users.controller')
 const authMiddleware = require('./middlewares/auth')
 require('./api/articles/articles.schema') // temporaire
